@@ -1,3 +1,4 @@
+import {analyze, availableConditions, conditions, parseHand} from './yaku.mjs';
 import {tiles, rank, fits, choices, winningTiles, calculateFu, calculateScore} from './score.mjs';
 const $ = id => document.getElementById(id);
 const groups = Array(5).fill(null);
@@ -58,6 +59,7 @@ function render() {
   $('win').disabled = winningTiles(groups).length === 0;
   $('win').textContent = win ? 'アガリ ' + tileName(win.tile) + ' · ' + slotName(win.slot) : 'アガリ牌 ＋';
   calculate();
+  renderYaku();
 }
 function calculate() {
   const info = mode === 0 ? calculateFu({groups,win,ron:ron(),round:number('round'),
@@ -155,6 +157,7 @@ $('settings').onclick = () => {
     try { localStorage.setItem('mahjong-rules',JSON.stringify(rules)); } catch {}
     picker.close();
     calculate();
+    renderYaku();
   })]);
   $('windRule').value = rules.doubleWind;
   $('countRule').value = rules.counted ? 'yes' : 'no';
@@ -163,6 +166,11 @@ $('settings').onclick = () => {
   $('sticks').value = sticks;
 };
 $('reset').onclick = () => {
+  for (const id of ['useFullHand','ippatsu','localYaku']) $(id).checked = false;
+  for (const id of ['fullHand','dora','ura','aka','yakuEvent']) $(id).value = '';
+  $('reach').value = '0';
+  $('analysisRound').value = '27';
+  $('analysisSeat').value = '28';
   groups.fill(null); win = null; honba = 0; sticks = 0; seat = 28;
   $('han').value = ''; $('yakuman').value = 0; $('chi').value = 25; $('fu').value = 30;
   $('method').value = 'ron'; $('dealer').value = 'child'; $('round').value = 27; $('pinfu').checked = true;
@@ -171,6 +179,95 @@ $('reset').onclick = () => {
 $('seat').onchange = () => { if (!dealer()) seat = number('seat'); calculate(); };
 $('dealer').onchange = render;
 for (const id of ['round','method','pinfu','chi','fu','han','yakuman']) $(id).oninput = calculate;
+const winds = honors.slice(0,4).map((label,i) => [27+i,label]);
+options('analysisRound',winds);
+options('analysisSeat',winds.slice(1));
+function renderYaku() {
+  const full = $('useFullHand').checked;
+  $('fullHandRow').hidden = !full;
+  $('analysisWinds').hidden = !full;
+  $('analysisSeat').disabled = dealer();
+  const closed = full || !groups.some(g=>g?.open);
+  $('reach').disabled = !closed;
+  if (!closed) $('reach').value = '0';
+  const reach = number('reach');
+  const allowed = availableConditions({closed,ron:ron(),dealer:dealer(),reach,
+    kan:!full && groups.some(g=>g?.kind==='kan')});
+  const event = allowed.includes($('yakuEvent').value) ? $('yakuEvent').value : '';
+  options('yakuEvent',[['','なし'],...allowed.filter(k=>k!=='ippatsu').map(k=>[k,conditions[k]])]);
+  $('yakuEvent').value = event;
+  $('ippatsu').disabled = !allowed.includes('ippatsu') || ['rinshan','chankan'].includes(event);
+  if ($('ippatsu').disabled) $('ippatsu').checked = false;
+  $('ura').disabled = !closed || !reach;
+  if ($('ura').disabled) $('ura').value = '';
+  const result = $('yakuResults');
+  result.textContent = '和了牌を含む完成形を入力してください。';
+  $('localYakuRow').hidden = true;
+  const hand = full ? parseHand($('fullHand').value) : undefined;
+  if ((full && !hand) || (!full && mode!==0)) return;
+  const round = number(full ? 'analysisRound' : 'round');
+  const seat = full ? (dealer() ? 27 : number('analysisSeat')) : number('seat');
+  const input = {groups,win,hand,last:hand?.at(-1),round,seat,ron:ron(),dealer:dealer(),reach,event,
+    ippatsu:$('ippatsu').checked,local:$('localYaku').checked,doubleWind:rules.doubleWind,
+    dora:Object.fromEntries([['ドラ','dora'],['裏ドラ','ura'],['赤ドラ','aka']].map(([name,id])=>{
+      const n=number(id);
+      return [name,Number.isInteger(n) && n>0 && n<=99 ? n : 0];
+    }))};
+  const choices = analyze(input);
+  if (!choices.length) return;
+  const detected = choices.some(item=>item.detected.length);
+  $('localYakuRow').hidden = !detected;
+  if (!detected) $('localYaku').checked = false;
+  const total = item => calculateScore({fu:item.fu,han:item.han,yakuman:item.multiple,
+    ron:ron(),dealer:dealer(),kiriage:rules.kiriage,counted:rules.counted})?.total ?? 0;
+  const unique = new Map();
+  for (const item of choices) {
+    const key = JSON.stringify([item.roles,item.fu,item.wait,item.special,item.detected]);
+    if (!unique.has(key)) unique.set(key,item);
+  }
+  const cards = [...unique.values()].sort((a,b)=>total(b)-total(a)).map(item=>{
+    const box = document.createElement('article');
+    const title = document.createElement('strong');
+    title.textContent = item.multiple ? item.multiple+'倍役満' : item.valid ?
+      item.han+'翻 · '+item.fu+'符' : '役なし';
+    const line = document.createElement('p');
+    line.textContent = [item.wait,...item.roles.map(r=>r.name+' '+(r.multiple ? r.multiple+'倍役満' : r.han+'翻'))].filter(Boolean).join(' ／ ');
+    box.append(title,line);
+    if (full && item.groups.length) {
+      const shape = document.createElement('p');
+      shape.innerHTML = item.groups.map(g=>faces(g.tiles)).join(' ');
+      box.append(shape);
+    }
+    if (item.detected.length && !input.local) {
+      const note = document.createElement('p');
+      note.textContent = 'ローカル役候補：手の内一盃口（カスタムで採用できます）';
+      box.append(note);
+    }
+    if (item.valid && (item.multiple || item.han<=99)) {
+      const activeFu = mode===0 ? calculateFu({groups,win,round:number('round'),seat:number('seat'),
+        ron:ron(),doubleWind:rules.doubleWind,pinfu:$('pinfu').checked})?.fu : number(mode===1 ? 'chi' : 'fu');
+      if ((!item.multiple && activeFu!==item.fu) || (item.multiple && mode===0 && !activeFu)) {
+        const note = document.createElement('p');
+        note.textContent = item.multiple ? '「符・翻入力」に切り替えると役満を適用できます。'
+          : !full ? '点数計算欄の平和設定を確認してください。'
+          : '点数計算欄の符を '+item.fu+'符 に合わせると適用できます。';
+        box.append(note);
+      } else {
+        box.append(button(item.multiple ? '役満倍率に適用' : '翻数に適用',()=>{
+          $('yakuman').value = item.multiple;
+          if (!item.multiple) $('han').value = item.han;
+          calculate();
+        }));
+      }
+    }
+    return box;
+  });
+  result.replaceChildren(...cards);
+}
+for (const id of ['analysis','useFullHand','fullHand','analysisRound','analysisSeat','reach','yakuEvent','ippatsu',
+  'dora','ura','aka','localYaku','round','seat','method','pinfu','chi','fu']) {
+  $(id).addEventListener(id==='analysis' ? 'toggle' : 'input',renderYaku);
+}
 render();
 
 const registration = 'serviceWorker' in navigator
