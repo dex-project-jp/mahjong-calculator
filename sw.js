@@ -1,4 +1,4 @@
-const CACHE = 'mahjong-calculator-v1.0.0';
+const CACHE = 'mahjong-calculator-v1.0.1';
 const ASSETS = ['./','./index.html','./style.css','./app.mjs','./score.mjs','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS))));
 self.addEventListener('message',event => { if (event.data === 'activate') event.waitUntil(self.skipWaiting()); });

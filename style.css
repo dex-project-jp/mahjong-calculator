@@ -14,5 +14,26 @@ section{margin-bottom:10px;border:1px solid var(--line);border-radius:14px;backg
 label{display:grid;gap:4px;color:var(--muted);font-size:13px;flex:1;min-width:0}select,input[type=number]{width:100%;font-size:16px;color:#f6eddb}
 #win{align-self:end;flex:1.6;font-size:13px}#pinfuRow{display:flex;align-items:center;min-height:44px}
 #result{min-height:88px;text-align:center}#result strong{display:block;font-size:clamp(28px,8vw,44px);color:var(--gold);font-variant-numeric:tabular-nums}#result p,#status{color:var(--muted);margin:6px 0;font-size:13px}
-dialog{position:fixed;inset:auto 0 0;margin:0 auto;width:min(100%,560px);max-width:100%;max-height:85dvh;border:1px solid var(--line);border-radius:18px 18px 0 0;background:#241e15;color:inherit;padding:0}dialog::backdrop{background:#000a}.sheet{padding:12px 14px max(16px,env(safe-area-inset-bottom))}.pickerGrid{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0}.pickerGrid button{min-width:44px;min-height:48px}.pickerGrid .tile{font-size:23px}.pickerGrid button.selected{border-color:var(--gold);background:#51401e}
+#picker{position:fixed;inset:auto 0 0;margin:0 auto;width:min(100%,560px);max-width:100%;max-height:none;border:0;background:transparent;color:inherit;padding:0;overflow:hidden}
+#picker::backdrop{background:#000a}
+#picker[open]{animation:sheet-enter .2s ease-out}
+@keyframes sheet-enter{from{transform:translateY(100%)}}
+@media(prefers-reduced-motion:reduce){#picker[open]{animation:none}}
+.sheet{
+  display:flex;flex-direction:column;
+  max-height:calc(100vh - max(8px,env(safe-area-inset-top)));
+  max-height:calc(100dvh - max(8px,env(safe-area-inset-top)));
+  padding:8px max(12px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
+  border:1px solid var(--line);border-radius:18px 18px 0 0;background:#241e15;
+}
+.sheet > header{flex:none;padding-bottom:6px}
+.sheet h2{margin:0}
+.sheet > header button{flex-shrink:0}
+#pickerBody{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:3px}
+#settingsError:empty{display:none}
+.pickerGrid{display:flex;flex-wrap:wrap;align-items:flex-start;gap:6px}
+.pickerGrid + button{margin-top:6px}
+.pickerGrid button{min-width:44px;min-height:48px}
+.pickerGrid .tile{font-size:23px}
+.pickerGrid button.selected{border-color:var(--gold);background:#51401e}
 .tile svg{width:1.05em;height:1.4em}.honor{min-width:1.05em}.h31{color:transparent;position:relative}.h31::after{content:"";position:absolute;inset:17%;border:1px solid #3a6183;border-radius:2px}.h33{color:#a12322}

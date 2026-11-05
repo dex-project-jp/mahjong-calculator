@@ -6,26 +6,38 @@ const honors = ['東','南','西','北','白','發','中'];
 const numerals = '一二三四五六七八九';
 const slotName = slot => slot ? '面子' + slot : '雀頭';
 const tileName = tile => tile >= 27 ? honors[tile-27] : rank(tile) + suits[Math.floor(tile/9)][0];
-const pipPositions = [
-  [4], [0,8], [0,4,8], [0,2,6,8], [0,2,4,6,8],
-  [0,2,3,5,6,8], [0,2,3,4,5,6,8], [0,1,2,3,5,6,7,8], [0,1,2,3,4,5,6,7,8]
-];
+const circleRows = [[1],[1,1],[1,1,1],[2,2],[2,1,2],[2,2,2],[1,1,1,2,2],[2,2,2,2],[3,3,3]];
+const bambooRows = [[],[1,1],[1,2],[2,2],[2,1,2],[3,3],[1,3,3],[2,2,2,2],[3,3,3]];
 function face(tile) {
-  if (tile >= 27) {
-    return '<span class="tile honor h' + tile + '">' + tileName(tile) + '</span>';
-  }
+  if (tile >= 27) return '<span class="tile honor h' + tile + '">' + tileName(tile) + '</span>';
   const value = rank(tile);
   if (tile < 9) return '<span class="tile">' + numerals[value-1] + '<i>萬</i></span>';
   const circles = tile < 18;
-  const marks = pipPositions[value-1].map((position,index) => {
-    const x = 5 + position % 3 * 6;
-    const y = 6 + Math.floor(position / 3) * 9;
-    const color = index === 0 ? '#a12322' : '#236042';
-    return circles ? '<circle cx="' + x + '" cy="' + y + '" r="' + (value === 1 ? 6 : 2.15) +
-      '" fill="none" stroke="' + color + '" stroke-width="1.5"/>'
-      : '<path d="M' + x + ' ' + (y-3) + 'v6m-1.4-3h2.8" stroke="' + color + '" stroke-width="1.4"/>';
-  });
-  return '<span class="tile"><svg aria-hidden="true" viewBox="0 0 22 30">' + marks.join('') + '</svg></span>';
+  let marks;
+  if (circles && value === 1) {
+    marks = '<circle cx="12" cy="16" r="9" fill="none" stroke="#244c55" stroke-width="2"/>' +
+      '<circle cx="12" cy="16" r="6" fill="none" stroke="#286344" stroke-width="1.5"/>' +
+      '<circle cx="12" cy="16" r="3" fill="#a12322"/>';
+  } else if (!circles && value === 1) {
+    marks = '<path d="M4 23l5-8q1-3 5-4l1-4q2-3 5-1l2 2-4 2q2 8-5 11l-3 4-1-4-6 5z" fill="#246044"/>' +
+      '<path d="M9 18q3-5 7-4-2 5-7 4z" fill="#a12322"/>' +
+      '<circle cx="18" cy="7.5" r=".7" fill="#fffbee"/>' +
+      '<path d="M6 27h12m-6-6-1 6m4-7 1 7" fill="none" stroke="#244c55" stroke-width="1.2"/>';
+  } else {
+    const rows = (circles ? circleRows : bambooRows)[value-1];
+    marks = rows.map((count,row) => Array.from({length:count},(_,column) => {
+      const x = 12 + (column - (count-1)/2) * 7;
+      const y = 16 + (row - (rows.length-1)/2) * Math.min(12,24/rows.length + 1);
+      const color = circles
+        ? ((value === 5 && row === 1) || value === 7 && row > 2 || value === 9 && row === 1 ? '#a12322' : row % 2 ? '#286344' : '#244c55')
+        : ((value === 5 && row === 1) || value === 7 && row === 0 || value === 9 && row === 0 ? '#a12322' : '#246044');
+      const shape = circles
+        ? '<circle r="2.65" fill="none" stroke="currentColor" stroke-width="1.15"/><circle r=".8" fill="currentColor"/>'
+        : '<path d="M-1.6-3.3h3.2L.9-1.2l.7 1.2-.7 1.2.7 2.1h-3.2l.7-2.1L-1.6 0l.7-1.2z" fill="currentColor"/>';
+      return '<g transform="translate(' + x + ' ' + y + ')" color="' + color + '">' + shape + '</g>';
+    }).join('')).join('');
+  }
+  return '<span class="tile"><svg aria-hidden="true" viewBox="0 0 24 32">' + marks + '</svg></span>';
 }
 const faces = list => '<span class="faces">' + list.map(face).join('') + '</span>';
 const labels = {sequence:['門前','チー'],triplet:['暗刻','明刻'],kan:['暗槓','明槓']};
@@ -100,7 +112,9 @@ function calculate() {
 const picker = $('picker');
 function panel(title, children) {
   $('pickerTitle').textContent = title;
-  $('pickerBody').replaceChildren(...children);
+  const body = $('pickerBody');
+  body.replaceChildren(...children);
+  body.scrollTop = 0;
   if (!picker.open) picker.showModal();
 }
 function grid(nodes) {
