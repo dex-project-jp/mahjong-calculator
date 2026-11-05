@@ -37,7 +37,8 @@
 <div class="row"><label>ドラ<input id="dora" type="number" min="0" max="99" inputmode="numeric"></label><label>裏ドラ<input id="ura" type="number" min="0" max="99" inputmode="numeric"></label><label>赤ドラ<input id="aka" type="number" min="0" max="99" inputmode="numeric"></label></div>
 <label id="localYakuRow" hidden><span><input id="localYaku" type="checkbox">手の内一盃口を採用（ローカル・1翻）</span></label>
 </details>
-<div id="yakuResults" aria-live="polite"></div>
+<div id="yakuResults" aria-live="polite">役解析を読み込み中…</div>
+<button id="applyHan" type="button" disabled>翻数に適用</button>
 </details>
 
 </section>
@@ -56,5 +57,5 @@
 </div>
 </main>
 <dialog id="picker"><div class="sheet"><header><h2 id="pickerTitle"></h2><button id="close">閉じる</button></header><div id="pickerBody"></div></div></dialog>
-<script type="module" src="./app.mjs"></script>
+<script type="module" src="./app.mjs?v=1.0.6"></script>
 </body></html>

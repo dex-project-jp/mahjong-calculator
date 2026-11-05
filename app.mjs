@@ -179,7 +179,7 @@ for (const id of ['round','method','pinfu','chi','fu','han','yakuman']) $(id).on
 render();
 
 if ($('analysis')) {
-  import('./yaku.mjs').then(({analyze, availableConditions, conditions, parseHand}) => {
+  import('./yaku.mjs?v=1.0.6').then(({analyze, availableConditions, conditions, parseHand}) => {
     const winds = honors.slice(0,4).map((label,i) => [27+i,label]);
     options('analysisRound',winds);
     options('analysisSeat',winds.slice(1));
@@ -203,7 +203,16 @@ if ($('analysis')) {
       $('ura').disabled = !closed || !reach;
       if ($('ura').disabled) $('ura').value = '';
       const result = $('yakuResults');
-      result.textContent = '和了牌を含む完成形を入力してください。';
+      const apply = $('applyHan');
+      if (apply) {
+        apply.disabled = true;
+        apply.onclick = null;
+      }
+      const missing = groups.flatMap((group,slot)=>group ? [] : [slotName(slot)]);
+      if (!win) missing.push('アガリ牌');
+      result.textContent = full ? '門前の和了形14枚を入力してください。最後の1枚がアガリ牌です。'
+        : mode!==0 ? '通常手の牌入力、または門前の14枚入力が必要です。'
+        : '不足：'+missing.join('、');
       $('localYakuRow').hidden = true;
       const hand = full ? parseHand($('fullHand').value) : undefined;
       if ((full && !hand) || (!full && mode!==0)) return;
@@ -216,7 +225,10 @@ if ($('analysis')) {
           return [name,Number.isInteger(n) && n>0 && n<=99 ? n : 0];
         }))};
       const choices = analyze(input);
-      if (!choices.length) return;
+      if (!choices.length) {
+        if (full && hand.length===14) result.textContent = '入力された14枚は和了形ではありません。';
+        return;
+      }
       const detected = choices.some(item=>item.detected.length);
       $('localYakuRow').hidden = !detected;
       if (!detected) $('localYaku').checked = false;
@@ -227,7 +239,16 @@ if ($('analysis')) {
         const key = JSON.stringify([item.roles,item.fu,item.wait,item.special,item.detected]);
         if (!unique.has(key)) unique.set(key,item);
       }
-      const cards = [...unique.values()].sort((a,b)=>total(b)-total(a)).map(item=>{
+      const ordered = [...unique.values()].sort((a,b)=>total(b)-total(a));
+      const bestHan = ordered.find(item=>item.valid && !item.multiple && item.han<=99);
+      if (apply && bestHan) {
+        apply.disabled = false;
+        apply.onclick = () => {
+          $('han').value = bestHan.han;
+          calculate();
+        };
+      }
+      const cards = ordered.map(item=>{
         const box = document.createElement('article');
         const title = document.createElement('strong');
         title.textContent = item.multiple ? item.multiple+'倍役満' : item.valid ?
@@ -245,7 +266,7 @@ if ($('analysis')) {
           note.textContent = 'ローカル役候補：手の内一盃口（カスタムで採用できます）';
           box.append(note);
         }
-        if (item.valid && (item.multiple || item.han<=99)) {
+        if (item.multiple || !apply && item.valid && item.han<=99) {
           const activeFu = mode===0 ? calculateFu({groups,win,round:number('round'),seat:number('seat'),
             ron:ron(),doubleWind:rules.doubleWind,pinfu:$('pinfu').checked})?.fu : number(mode===1 ? 'chi' : 'fu');
           if ((!item.multiple && activeFu!==item.fu) || (item.multiple && mode===0 && !activeFu)) {
@@ -296,7 +317,7 @@ if ($('appTabs')) {
     if (focus) tabs[index].focus();
     if (index === 1 && !guideRequested) {
       guideRequested = true;
-      import('./yaku-guide.mjs').catch(() => {
+      import('./yaku-guide.mjs?v=1.0.6').catch(() => {
         guideRequested = false;
         $('guide').textContent = '図鑑を読み込めません。再度タブを開いてください。';
       });
