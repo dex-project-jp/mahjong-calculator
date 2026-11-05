@@ -49,3 +49,10 @@ a{color:var(--gold)}
 #yakuResults .faces{display:inline-flex;vertical-align:middle;margin-bottom:4px}
 .guideTiles{display:flex;flex-wrap:wrap;gap:3px}
 .guideTiles .tile{width:30px;height:40px;font-size:14px}
+#appTabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px}
+#appTabs [aria-selected=true]{background:var(--gold);color:#20170a;font-weight:700}
+#guide .guideTiles{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+#guide .guideGroup{display:inline-flex;align-items:center;gap:1px;padding:3px;border:1px solid var(--line);border-radius:4px}
+#guide .guideGroup[data-kind=pair]{border-color:var(--gold)}
+#guide .guideGroup[data-kind=open]{border-style:dashed;border-color:var(--gold)}
+#guide .guideTiles .tile,#guide .guideTiles img.tile-image{display:inline-grid;flex:none;width:clamp(12px,4vw,20px);height:clamp(16px,5.34vw,27px);min-width:0;min-height:0;font-size:clamp(9px,2.7vw,13px);object-fit:contain}

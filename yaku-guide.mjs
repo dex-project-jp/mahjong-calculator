@@ -74,22 +74,96 @@ const entries = [
 ];
 const $ = id => document.getElementById(id);
 const fold = value => value.normalize('NFKC').toLowerCase().replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-96));
-function illustration(example) {
+// Each space separates a meld or pair. ! marks a called meld.
+const examples = {
+  '立直':'123m 456p 789s 234s 55p',
+  'ダブル立直':'123m 456p 789s 234s 55p',
+  '一発':'123m 456p 789s 234s 55p',
+  '門前清自摸和':'123m 456p 789s 234s 55p',
+  '平和':'234p 567p 345s 678m 22s',
+  '断么九':'!234s 345s 456p 678m 22p',
+  '一盃口':'123p 123p 456s 789m 22s',
+  '役牌':'!555z 123m 456s 789p 22p',
+  '海底摸月':'123m 456p 789s 234s 55p',
+  '河底撈魚':'123m 456p 789s 234s 55p',
+  '嶺上開花':'!1111s 123p 456p 789m 22p',
+  '槍槓':'123m 456p 789s 234s 55p',
+  '七対子':'11p 22p 33p 44p 55p 66p 77p',
+  '三色同順':'!123m 123p 123s 456m 55p',
+  '一気通貫':'123p 456p 789p 234s 55z',
+  '混全帯么九':'123p 789s 111m 999p 55z',
+  '純全帯么九':'123p 789s 111m 999p 11s',
+  '対々和':'!333p !777s 222m 555z 44z',
+  '三暗刻':'222p 555s 777m !123m 44z',
+  '三槓子':'!1111p !9999s 1111z 123m 55p',
+  '三色同刻':'333m 333p 333s 456p 55z',
+  '小三元':'!555z 666z 123m 456p 77z',
+  '混老頭':'111p 999s 111m 555z 11z',
+  '二盃口':'123p 123p 678p 678p 55s',
+  '混一色':'123p 456p 789p 333z 55z',
+  '清一色':'123s 123s 456s 789s 99s',
+  '国士無双':'19m 19p 19s 234567z 11z',
+  '四暗刻':'222p 555s 777m 444z 11z',
+  '大三元':'!555z !666z 777z 123m 22p',
+  '小四喜':'111z 222z 333z 123p 44z',
+  '字一色':'111z 333z 555z 666z 77z',
+  '緑一色':'234s 666s 888s 666z 22s',
+  '清老頭':'111p 999p 111s 999s 11m',
+  '四槓子':'!1111p !9999s 1111m 5555z 22p',
+  '九蓮宝燈':'111p 2345678p 999p 5p',
+  '天和':'123m 456p 789s 234s 55p',
+  '地和':'123m 456p 789s 234s 55p',
+  '国士無双十三面待ち':'19m 19p 19s 234567z 11z',
+  '四暗刻単騎':'222p 555s 777m 444z 11z',
+  '純正九蓮宝燈':'111s 2345678s 999s 5s',
+  '大四喜':'!111z !222z 333z 444z 55p',
+  '手の内一盃口':'123s 123s !456p 789m 55z',
+  '燕返し':'123m 456p 789s 234s 55p',
+  '三連刻':'!222p 333p 444p 123s 55z',
+  '四連刻':'!222s 333s 444s 555s 55z',
+  '一色三順':'!234p 234p 234p 456s 55z',
+  '大車輪':'22p 33p 44p 55p 66p 77p 88p',
+  '大竹林':'22s 33s 44s 55s 66s 77s 88s',
+  '大数隣':'22m 33m 44m 55m 66m 77m 88m',
+  '人和':'123m 456p 789s 234s 55p',
+  '八連荘':'111z 456p 789s 234s 55p',
+  'オープン立直':'123m 456p 789s 234s 55p',
+  '十三不塔':'147m 147p 147s 234z 11z',
+  '百万石':'777m 888m 999m 666m 55m',
+  '槓振り':'123m 456p 789s 234s 55p',
+  '石の上にも三年':'123m 456p 789s 234s 55p'
+};
+function illustration(name,fragment) {
   const row = document.createElement('div');
   row.className = 'guideTiles';
-  for (const tile of parseHand(example) ?? []) {
-    if (tile>=9 && tile<27) {
-      const image = document.createElement('img');
-      image.className = 'tile-image';
-      image.src = './tiles/'+(tile<18 ? 'Pin' : 'Sou')+rank(tile)+'.svg';
-      image.alt = rank(tile)+(tile<18 ? '筒' : '索');
-      row.append(image);
-    } else {
-      const span = document.createElement('span');
-      span.className = 'tile';
-      span.textContent = tile<9 ? '一二三四五六七八九'[tile]+'萬' : '東南西北白發中'[tile-27];
-      row.append(span);
+  for (const token of (examples[name] || fragment).split(' ')) {
+    const called = token.startsWith('!');
+    const tiles = parseHand(called ? token.slice(1) : token);
+    if (!tiles) continue;
+    const group = document.createElement('span');
+    group.className = 'guideGroup';
+    group.dataset.kind = called ? 'open' : tiles.length===2 && tiles[0]===tiles[1] ? 'pair' : 'closed';
+    group.setAttribute('aria-label',called ? '副露' : group.dataset.kind==='pair' ? '対子' : '牌のまとまり');
+    for (const tile of tiles) {
+      if (tile>=9 && tile<27) {
+        const image = document.createElement('img');
+        image.className = 'tile-image';
+        image.src = './tiles/'+(tile<18 ? 'Pin' : 'Sou')+rank(tile)+'.svg';
+        image.alt = rank(tile)+(tile<18 ? '筒' : '索');
+        group.append(image);
+      } else {
+        const span = document.createElement('span');
+        span.className = tile>=27 ? 'tile honor h'+tile : 'tile';
+        span.textContent = tile<9 ? '一二三四五六七八九'[tile] : '東南西北白發中'[tile-27];
+        if (tile<9) {
+          const suit = document.createElement('i');
+          suit.textContent = '萬';
+          span.append(suit);
+        }
+        group.append(span);
+      }
     }
+    row.append(group);
   }
   return row;
 }
@@ -102,10 +176,11 @@ function render() {
   const cards = matches.map(([category,name,han,desc,example,source,automatic])=>{
     const detail = document.createElement('details');
     const title = document.createElement('summary');
-    title.textContent = name.split(' ')[0]+' · '+han;
+    const shortName = name.split(' ')[0];
+    title.textContent = shortName+(category==='ローカル役' ? '（ローカル）' : '')+' · '+han;
     const body = document.createElement('p');
     body.textContent = desc;
-    detail.append(title,body,illustration(example));
+    detail.append(title,body,illustration(shortName,example));
     if (category==='ローカル役' || category==='ダブル役満') {
       const note = document.createElement('p');
       note.textContent = category==='ダブル役満' ? 'このアプリでは2倍役満として表示。卓の採用ルールを確認してください。' :
