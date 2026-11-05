@@ -15,23 +15,23 @@ try {
   assert.equal(await apply.isEnabled(),false);
   assert.match(await page.locator('#yakuResults').innerText(),/雀頭.*面子4.*アガリ牌/);
 
-  const grid = page.locator('#pickerBody .pickerGrid button');
+  const press = name => page.getByRole('button',{name,exact:true}).press('Enter');
   async function choose(slot,suit,tile,shape) {
-    await page.locator('#groups button').nth(slot).click();
-    await grid.nth(suit).click();
-    await grid.nth(tile).click();
-    if (slot) {
-      await grid.nth(shape).click();
-      await grid.first().click();
+    await press(slot+' 未選択');
+    await press(suit);
+    await press(tile);
+    if (shape) {
+      await press(shape);
+      await press('門前');
     }
   }
-  await choose(0,2,1);
-  await choose(1,1,0,0);
-  await choose(2,1,0,0);
-  await choose(3,2,3,2);
-  await choose(4,0,6,2);
-  await page.locator('#win').click();
-  await page.getByRole('button',{name:'6索 · 面子3',exact:true}).click();
+  await choose('雀頭','索子','2索');
+  await choose('面子1','筒子','1筒','1筒 2筒 3筒');
+  await choose('面子2','筒子','1筒','1筒 2筒 3筒');
+  await choose('面子3','索子','4索','4索 5索 6索');
+  await choose('面子4','萬子','7萬','7萬 8萬 9萬');
+  await page.locator('#win').press('Enter');
+  await press('6索 · 面子3');
   await page.locator('#yakuResults').getByText('2翻 · 30符',{exact:true}).waitFor();
   assert.match(await page.locator('#yakuResults').innerText(),/平和 1翻.*一盃口 1翻/);
   assert.equal(await page.locator('#han').inputValue(),'');
