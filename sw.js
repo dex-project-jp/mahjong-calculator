@@ -1,6 +1,6 @@
-const CACHE = 'mahjong-calculator-v1.0.2';
+const CACHE = 'mahjong-calculator-v1.0.3';
 const TILE_ASSETS = ['Pin','Sou'].flatMap(suit =>
-  [...Array.from({length:9},(_,i) => i+1),'5-Dora'].map(rank => './tiles/' + suit + rank + '.svg'));
+  Array.from({length:9},(_,i) => './tiles/' + suit + (i+1) + '.svg'));
 const ASSETS = ['./','./index.html','./style.css','./app.mjs','./score.mjs','./manifest.webmanifest','./icon-192.png','./icon-512.png',...TILE_ASSETS];
 self.addEventListener('install',event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS))));
 self.addEventListener('message',event => { if (event.data === 'activate') event.waitUntil(self.skipWaiting()); });

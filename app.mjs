@@ -6,17 +6,14 @@ const honors = ['東','南','西','北','白','發','中'];
 const numerals = '一二三四五六七八九';
 const slotName = slot => slot ? '面子' + slot : '雀頭';
 const tileName = tile => tile >= 27 ? honors[tile-27] : rank(tile) + suits[Math.floor(tile/9)][0];
-function face(tile, red = false) {
+function face(tile) {
   if (tile >= 27) return '<span class="tile honor h' + tile + '">' + tileName(tile) + '</span>';
   const value = rank(tile);
   if (tile < 9) return '<span class="tile">' + numerals[value-1] + '<i>萬</i></span>';
-  const file = (tile < 18 ? 'Pin' : 'Sou') + value + (red ? '-Dora' : '');
+  const file = (tile < 18 ? 'Pin' : 'Sou') + value;
   return '<img class="tile-image" src="./tiles/' + file + '.svg" alt="">';
 }
-function faces(list, redTile) {
-  const redIndex = list.indexOf(redTile);
-  return '<span class="faces">' + list.map((tile,i) => face(tile,i === redIndex)).join('') + '</span>';
-}
+const faces = list => '<span class="faces">' + list.map(tile => face(tile)).join('') + '</span>';
 const labels = {sequence:['門前','チー'],triplet:['暗刻','明刻'],kan:['暗槓','明槓']};
 let mode = 0, win = null, seat = 28, honba = 0, sticks = 0;
 const rules = {doubleWind:4, kiriage:false, counted:true};
@@ -51,15 +48,15 @@ function render() {
   [...$('modes').children].forEach((node,i) => node.setAttribute('aria-pressed',i === mode));
   $('groups').replaceChildren(...groups.map((group,slot) => {
     const suffix = group && slot ? labels[group.kind][Number(group.open)] : '';
-    const node = button(slotName(slot) + (group ? ' ' + group.tiles.map((tile,i) => (i === group.tiles.indexOf(group.redTile) ? '赤' : '') + tileName(tile)).join(' ') + ' ' + suffix : ' 未選択'),
-      () => pickGroup(slot), '<span>' + slotName(slot) + '</span>' + (group ? faces(group.tiles,group.redTile) : '＋') + '<span>' + suffix + '</span>');
+    const node = button(slotName(slot) + (group ? ' ' + group.tiles.map(tileName).join(' ') + ' ' + suffix : ' 未選択'),
+      () => pickGroup(slot), '<span>' + slotName(slot) + '</span>' + (group ? faces(group.tiles) : '＋') + '<span>' + suffix + '</span>');
     node.className = 'slot';
     return node;
   }));
   options('seat', (dealer() ? [0] : [1,2,3]).map(i => [27+i,honors[i]]));
   $('seat').value = dealer() ? 27 : seat;
   $('win').disabled = winningTiles(groups).length === 0;
-  $('win').textContent = win ? 'アガリ ' + (win.red ? '赤' : '') + tileName(win.tile) + ' · ' + slotName(win.slot) : 'アガリ牌 ＋';
+  $('win').textContent = win ? 'アガリ ' + tileName(win.tile) + ' · ' + slotName(win.slot) : 'アガリ牌 ＋';
   calculate();
 }
 function calculate() {
@@ -106,28 +103,20 @@ function pickGroup(slot) {
 }
 function pickTile(slot,suit) {
   const candidates = tiles.filter(tile => Math.floor(tile/9) === suit);
-  const redTile = suit === 1 ? 13 : 22;
-  const buttons = candidates.map(tile => tileButton(tile,false));
-  if (suit === 1 || suit === 2) buttons.push(tileButton(redTile,true));
-  panel(slotName(slot) + ' · ' + suits[suit], [grid(buttons),button('戻る',() => pickGroup(slot))]);
-
-  function tileButton(tile,red) {
-    const node = button((red ? '赤' : '') + tileName(tile), () => pickShape(slot,tile,red), face(tile,red));
+  panel(slotName(slot) + ' · ' + suits[suit], [grid(candidates.map(tile => {
+    const node = button(tileName(tile), () => pickShape(slot,tile), face(tile));
     node.disabled = !choices(tile,!slot).some(candidate => fits(groups,candidate,slot));
     return node;
-  }
+  })),button('戻る',() => pickGroup(slot))]);
 }
-function pickShape(slot,tile,red) {
+function pickShape(slot,tile) {
   const candidates = choices(tile,!slot);
-  const redTile = red ? tile : undefined;
-  if (!slot) return setGroup(slot,{...candidates[0],open:false,redTile});
+  if (!slot) return setGroup(slot,{...candidates[0],open:false});
   panel(slotName(slot) + ' · 組み合わせ', [grid(candidates.map(group => {
-    const label = group.tiles.map((value,i) =>
-      (i === group.tiles.indexOf(redTile) ? '赤' : '') + tileName(value)).join(' ');
-    const node = button(label, () => {
+    const node = button(group.tiles.map(tileName).join(' '), () => {
       panel(slotName(slot) + ' · 暗／明', [grid(labels[group.kind].map((label,i) =>
-        button(label,() => setGroup(slot,{...group,open:Boolean(i),redTile})))),button('戻る',() => pickShape(slot,tile,red))]);
-    }, faces(group.tiles,redTile));
+        button(label,() => setGroup(slot,{...group,open:Boolean(i)})))),button('戻る',() => pickShape(slot,tile))]);
+    }, faces(group.tiles));
     node.disabled = !fits(groups,group,slot);
     return node;
   })),button('戻る',() => pickTile(slot,Math.floor(tile/9)))]);
@@ -140,20 +129,15 @@ function setGroup(slot,group) {
   render();
   $('groups').children[slot].focus();
 }
-$('win').onclick = () => panel('アガリ牌と完成した組', [grid(winningTiles(groups).flatMap(item => {
-  const group = groups[item.slot];
-  const hasRed = group.redTile === item.tile;
-  const hasNormal = !hasRed || group.tiles.filter(tile => tile === item.tile).length > 1;
-  return [...(hasNormal ? [false] : []), ...(hasRed ? [true] : [])].map(red => {
-    const node = button((red ? '赤' : '') + tileName(item.tile) + ' · ' + slotName(item.slot), () => {
-      win = {...item,red};
-      $('pinfu').checked = true;
-      picker.close();
-      render();
-    }, face(item.tile,red) + ' ' + slotName(item.slot));
-    if (win?.tile === item.tile && win.slot === item.slot && win.red === red) node.classList.add('selected');
-    return node;
-  });
+$('win').onclick = () => panel('アガリ牌と完成した組', [grid(winningTiles(groups).map(item => {
+  const node = button(tileName(item.tile) + ' · ' + slotName(item.slot), () => {
+    win = item;
+    $('pinfu').checked = true;
+    picker.close();
+    render();
+  }, face(item.tile) + ' ' + slotName(item.slot));
+  if (win?.tile === item.tile && win.slot === item.slot) node.classList.add('selected');
+  return node;
 }))]);
 $('modes').append(...['通常手','七対子','符・翻入力'].map((label,i) => button(label,() => {mode=i;render();})));
 $('close').onclick = () => picker.close();
