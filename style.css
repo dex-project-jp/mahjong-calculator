@@ -57,3 +57,7 @@ a{color:var(--gold)}
 #guide .guideSideways{position:relative;width:var(--tile-h);height:var(--tile-w);flex:none}
 #guide .guideSideways > :is(.tile,.tile-image){position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-90deg)}
 #guide .guideTiles .tile,#guide .guideTiles img.tile-image{display:inline-grid;flex:none;width:clamp(12px,4vw,20px);height:clamp(16px,5.34vw,27px);min-width:0;min-height:0;font-size:clamp(9px,2.7vw,13px);object-fit:contain}
+#guide .guidePair{display:inline-flex;gap:1px;margin-right:2px}
+#guide .guideWin{position:relative}
+#guide .guideWin:has(small){flex-direction:column;align-items:center}
+#guide .guideWin small{font-size:9px;line-height:1;color:var(--gold);white-space:nowrap}

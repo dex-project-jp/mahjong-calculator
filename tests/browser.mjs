@@ -42,7 +42,7 @@ try {
   assert.equal(await page.locator('#han').inputValue(),'2');
 
   await page.getByRole('tab',{name:'麻雀役図鑑'}).click();
-  await page.getByRole('tabpanel',{name:'麻雀役図鑑'}).getByText('平和 · 1翻',{exact:true}).waitFor();
+  await page.getByRole('tabpanel',{name:'麻雀役図鑑'}).getByText('平和（ピンフ） · 1翻',{exact:true}).waitFor();
   await page.getByRole('tab',{name:'点数計算'}).click();
   assert.equal(await page.locator('#han').inputValue(),'2');
   assert.match(await page.locator('#win').innerText(),/6索/);
