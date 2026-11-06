@@ -181,7 +181,7 @@ for (const id of ['round','method','pinfu','chi','fu','han','yakuman']) $(id).on
 render();
 
 if ($('analysis')) {
-  import('./yaku.mjs?v=1.0.8').then(({analyze, availableConditions, conditions, parseHand}) => {
+  import('./yaku.mjs?v=1.0.9').then(({analyze, availableConditions, conditions, parseHand}) => {
     const winds = honors.slice(0,4).map((label,i) => [27+i,label]);
     options('analysisRound',winds);
     options('analysisSeat',winds.slice(1));
@@ -340,7 +340,7 @@ if ($('appTabs')) {
     if (focus) tabs[index].focus();
     if (index === 1 && !guideRequested) {
       guideRequested = true;
-      import('./yaku-guide.mjs?v=1.0.8').catch(() => {
+      import('./yaku-guide.mjs?v=1.0.9').catch(() => {
         guideRequested = false;
         $('guide').textContent = '図鑑を読み込めません。再度タブを開いてください。';
       });

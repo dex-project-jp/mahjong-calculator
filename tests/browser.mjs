@@ -10,7 +10,6 @@ try {
   page.on('pageerror',error=>errors.push(error.message));
   await page.goto(process.argv[2] ?? 'http://localhost:8000/');
   const apply = page.getByRole('button',{name:'翻数に適用',exact:true});
-  await page.locator('#analysis > summary').click();
   await apply.waitFor({state:'visible'});
   assert.equal(await apply.isEnabled(),false);
   assert.match(await page.locator('#yakuResults').innerText(),/雀頭.*面子4.*アガリ牌/);

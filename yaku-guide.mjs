@@ -136,21 +136,31 @@ const examples = {
 function illustration(name,fragment) {
   const row = document.createElement('div');
   row.className = 'guideTiles';
-  for (const token of (examples[name] || fragment).split(' ')) {
+  const hand = document.createElement('span');
+  hand.className = 'guideHand';
+  row.append(hand);
+  const melds = [];
+  const tokens = (examples[name] || fragment).split(' ');
+  let winning;
+  for (const [index,token] of tokens.entries()) {
     const called = token.startsWith('!');
     const tiles = parseHand(called ? token.slice(1) : token);
     if (!tiles) continue;
-    const group = document.createElement('span');
-    group.className = 'guideGroup';
-    group.dataset.kind = called ? 'open' : tiles.length===2 && tiles[0]===tiles[1] ? 'pair' : 'closed';
-    group.setAttribute('aria-label',called ? '副露' : group.dataset.kind==='pair' ? '対子' : '牌のまとまり');
-    for (const tile of tiles) {
+    const group = called ? document.createElement('span') : hand;
+    if (called) {
+      group.className = 'guideMeld';
+      group.setAttribute('aria-label','副露');
+      melds.push(group);
+    }
+    const winningIndex = name==='平和' ? 1 : tokens.length-1;
+    for (const [position,tile] of tiles.entries()) {
+      let face;
       if (tile>=9 && tile<27) {
         const image = document.createElement('img');
         image.className = 'tile-image';
         image.src = './tiles/'+(tile<18 ? 'Pin' : 'Sou')+rank(tile)+'.svg';
         image.alt = rank(tile)+(tile<18 ? '筒' : '索');
-        group.append(image);
+        face = image;
       } else {
         const span = document.createElement('span');
         span.className = tile>=27 ? 'tile honor h'+tile : 'tile';
@@ -160,11 +170,25 @@ function illustration(name,fragment) {
           suit.textContent = '萬';
           span.append(suit);
         }
-        group.append(span);
+        face = span;
+      }
+      if (!called && name!=='流し満貫' && index===winningIndex && position===tiles.length-1) {
+        winning = document.createElement('span');
+        winning.className = 'guideWin';
+        winning.setAttribute('aria-label','アガリ牌');
+        winning.append(face);
+      } else if (called && position===0) {
+        const sideways = document.createElement('span');
+        sideways.className = 'guideSideways';
+        sideways.append(face);
+        group.append(sideways);
+      } else {
+        group.append(face);
       }
     }
-    row.append(group);
   }
+  if (winning) row.append(winning);
+  row.append(...melds);
   return row;
 }
 function render() {
