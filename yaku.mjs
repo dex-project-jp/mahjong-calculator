@@ -131,24 +131,32 @@ function evaluate({groups,win,tiles,special,prewin,round,seat,ron,dealer,reach,e
     fu:info?.fu ?? (special==='chiitoi' ? 25 : undefined),wait:info?.wait,special,groups,win};
 }
 export function analyze(input) {
-  const results = [];
   const {groups,win,hand,last} = input;
-  if (hand) {
-    if (hand.length!==14 || !hand.includes(last)) return results;
-    const counts = countsOf(hand);
-    const prewin = hand.slice();
-    prewin.splice(prewin.indexOf(last),1);
-    const evaluateSpecial = special => evaluate({...input,groups:[],win:{tile:last,slot:-1},tiles:hand,special,prewin});
+  const grouped = !hand;
+  if (grouped && (!groups.every(Boolean) || !win ||
+    !winningTiles(groups).some(item=>item.slot===win.slot && item.tile===win.tile))) return [];
+  const tiles = grouped ? groups.flatMap(g=>g.tiles) : hand;
+  const winningTile = grouped ? win.tile : last;
+  if ((!grouped && tiles.length!==14) || !tiles.includes(winningTile)) return [];
+
+  const fixed = grouped ? groups.filter(g=>g.open || g.kind==='kan') : [];
+  const free = grouped ? groups.filter(g=>!g.open && g.kind!=='kan').flatMap(g=>g.tiles) : hand;
+  const counts = countsOf(free);
+  const prewin = tiles.slice();
+  prewin.splice(prewin.indexOf(winningTile),1);
+  const context = {...input,tiles,prewin};
+  const results = [];
+  if (!fixed.length) {
+    const evaluateSpecial = special => evaluate({...context,groups:[],win:{tile:winningTile,slot:-1},special});
     if (orphan.every(t=>counts[t])) results.push(evaluateSpecial('kokushi'));
     if (counts.filter(n=>n===2).length===7) results.push(evaluateSpecial('chiitoi'));
-    for (const form of decompose(counts)) form.forEach((group,slot)=>{
-      if (group.tiles.includes(last)) results.push(evaluate({...input,groups:form,win:{tile:last,slot},tiles:hand,prewin}));
-    });
-  } else if (groups.every(Boolean) && win && winningTiles(groups).some(item=>item.slot===win.slot && item.tile===win.tile)) {
-    const tiles = groups.flatMap(g=>g.tiles);
-    const prewin = tiles.slice();
-    prewin.splice(prewin.indexOf(win.tile),1);
-    results.push(evaluate({...input,tiles,prewin}));
+  }
+  for (const freeForm of decompose(counts)) {
+    const form = [...freeForm,...fixed];
+    if (form.length!==5) continue;
+    for (const placement of winningTiles(form)) {
+      if (placement.tile===winningTile) results.push(evaluate({...context,groups:form,win:placement}));
+    }
   }
   return results;
 }

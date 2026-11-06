@@ -181,7 +181,7 @@ for (const id of ['round','method','pinfu','chi','fu','han','yakuman']) $(id).on
 render();
 
 if ($('analysis')) {
-  import('./yaku.mjs?v=1.0.7').then(({analyze, availableConditions, conditions, parseHand}) => {
+  import('./yaku.mjs?v=1.0.8').then(({analyze, availableConditions, conditions, parseHand}) => {
     const winds = honors.slice(0,4).map((label,i) => [27+i,label]);
     options('analysisRound',winds);
     options('analysisSeat',winds.slice(1));
@@ -242,7 +242,8 @@ if ($('analysis')) {
         if (!unique.has(key)) unique.set(key,item);
       }
       const ordered = [...unique.values()].sort((a,b)=>total(b)-total(a));
-      const bestHan = ordered.find(item=>item.valid && !item.multiple && item.han<=99);
+      const best = ordered.find(item=>item.valid);
+      const bestHan = best && !best.multiple && best.han<=99 ? best : null;
       if (apply && bestHan) {
         apply.disabled = false;
         apply.onclick = () => {
@@ -255,10 +256,24 @@ if ($('analysis')) {
         const title = document.createElement('strong');
         title.textContent = item.multiple ? item.multiple+'倍役満' : item.valid ?
           item.han+'翻 · '+item.fu+'符' : '役なし';
+        if (item===best) {
+          const adopted = document.createElement('p');
+          adopted.textContent = '採用'+(total(item) ? ' · '+total(item).toLocaleString('ja-JP')+'点（本場・供託なし）' : '');
+          box.append(adopted);
+        }
+        if (item===bestHan) {
+          const activeFu = mode===0 ? calculateFu({groups,win,round:number('round'),seat:number('seat'),
+            ron:ron(),doubleWind:rules.doubleWind,pinfu:$('pinfu').checked})?.fu : number(mode===1 ? 'chi' : 'fu');
+          if (activeFu!==item.fu) {
+            const note = document.createElement('p');
+            note.textContent = '翻数のみ適用します。同じ点数にするには、点数計算欄でも '+item.fu+'符 を指定してください。';
+            box.append(note);
+          }
+        }
         const line = document.createElement('p');
         line.textContent = [item.wait,...item.roles.map(r=>r.name+' '+(r.multiple ? r.multiple+'倍役満' : r.han+'翻'))].filter(Boolean).join(' ／ ');
         box.append(title,line);
-        if (full && item.groups.length) {
+        if (item.groups.length && (full || ordered.length>1)) {
           const shape = document.createElement('p');
           shape.innerHTML = item.groups.map(g=>faces(g.tiles)).join(' ');
           box.append(shape);
@@ -325,7 +340,7 @@ if ($('appTabs')) {
     if (focus) tabs[index].focus();
     if (index === 1 && !guideRequested) {
       guideRequested = true;
-      import('./yaku-guide.mjs?v=1.0.7').catch(() => {
+      import('./yaku-guide.mjs?v=1.0.8').catch(() => {
         guideRequested = false;
         $('guide').textContent = '図鑑を読み込めません。再度タブを開いてください。';
       });

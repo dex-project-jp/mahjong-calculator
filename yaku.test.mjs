@@ -52,3 +52,30 @@ test('ドラだけでは役が成立せず、矛盾する状況も加算しな�
   assert.ok(!availableConditions({closed:true,ron:true,dealer:true,reach:0,kan:true}).includes('tenhou'));
   assert.equal(parseHand('11111m'),null);
 });
+
+test('刻子入力と順子入力を同じ牌集合として比較する',()=>{
+  const pair=group('pair','55p');
+  const fourth=group('sequence','789s');
+  const triplets=['222m','333m','444m'].map(t=>group('triplet',t));
+  const sequences=Array.from({length:3},()=>group('sequence','234m'));
+  for (const ron of [true,false]) {
+    const evaluate = melds => analyze({...base,ron,groups:[pair,...melds,fourth],win:{tile:1,slot:1}});
+    const results=evaluate(triplets);
+    assert.deepEqual(results,evaluate(sequences));
+    const triplet=results.find(r=>r.groups[1]?.kind==='triplet');
+    assert.equal(Boolean(role(triplet,'三暗刻')),!ron);
+    assert.equal(triplet.wait,'双碰');
+    assert.ok(results.some(r=>role(r,'一盃口') && r.wait==='両面'));
+  }
+  const open=group('sequence','789s',true);
+  const results=analyze({...base,groups:[pair,...sequences,open],win:{tile:13,slot:0}});
+  assert.ok(results.some(r=>role(r,'三暗刻')));
+  assert.ok(results.every(r=>r.groups.includes(open)));
+});
+
+test('面子入力でも同じ牌の七対子を比較する',()=>{
+  const groups=[group('pair','77p'),...['123p','123p','456p','456p'].map(t=>group('sequence',t))];
+  const results=analyze({...base,groups,win:{tile:15,slot:0}});
+  assert.ok(results.some(r=>role(r,'七対子') && r.fu===25));
+  assert.ok(results.some(r=>role(r,'二盃口')));
+});
