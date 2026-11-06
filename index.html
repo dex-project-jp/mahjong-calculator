@@ -31,10 +31,10 @@
 <label id="fullHandRow" hidden>m＝萬子、p＝筒子、s＝索子、z＝字牌（東南西北白發中）<input id="fullHand" type="text" placeholder="例 1122334455667m 7m" autocapitalize="off" spellcheck="false"></label>
 <div class="row" id="analysisWinds" hidden><label>場風<select id="analysisRound"></select></label><label>自風<select id="analysisSeat"></select></label></div>
 <label>リーチ<select id="reach"><option value="0">なし</option><option value="1">リーチ</option><option value="2">ダブルリーチ</option></select></label>
+<div class="row"><label>ドラ<input id="dora" type="number" min="0" max="99" inputmode="numeric"></label><label>裏ドラ<input id="ura" type="number" min="0" max="99" inputmode="numeric"></label><label>赤ドラ<input id="aka" type="number" min="0" max="99" inputmode="numeric"></label></div>
 <details id="yakuCustom"><summary>カスタム ▼</summary>
 <label>和了時の状況<select id="yakuEvent"></select></label>
 <label><span><input id="ippatsu" type="checkbox">一発</span></label>
-<div class="row"><label>ドラ<input id="dora" type="number" min="0" max="99" inputmode="numeric"></label><label>裏ドラ<input id="ura" type="number" min="0" max="99" inputmode="numeric"></label><label>赤ドラ<input id="aka" type="number" min="0" max="99" inputmode="numeric"></label></div>
 <label id="localYakuRow" hidden><span><input id="localYaku" type="checkbox">手の内一盃口を採用（ローカル・1翻）</span></label>
 </details>
 <div id="yakuResults" aria-live="polite">役解析を読み込み中…</div>
@@ -57,5 +57,5 @@
 </div>
 </main>
 <dialog id="picker"><div class="sheet"><header><h2 id="pickerTitle"></h2><button id="close">閉じる</button></header><div id="pickerBody"></div></div></dialog>
-<script type="module" src="./app.mjs?v=1.0.6"></script>
+<script type="module" src="./app.mjs?v=1.0.7"></script>
 </body></html>

@@ -127,7 +127,9 @@ function pickShape(slot,tile) {
 function setGroup(slot,group) {
   if (group && !fits(groups,group,slot)) return;
   groups[slot] = group;
-  if (win?.slot === slot) win = null;
+  if (win?.slot === slot && (!group || group.open || group.kind === 'kan' || !group.tiles.includes(win.tile))) {
+    win = null;
+  }
   picker.close();
   render();
   $('groups').children[slot].focus();
@@ -173,13 +175,13 @@ $('reset').onclick = () => {
   $('method').value = 'ron'; $('dealer').value = 'child'; $('round').value = 27; $('pinfu').checked = true;
   render();
 };
-$('seat').onchange = () => { if (!dealer()) seat = number('seat'); calculate(); };
+$('seat').onchange = () => { if (!dealer()) seat = number('seat'); calculate(); renderYaku(); };
 $('dealer').onchange = render;
 for (const id of ['round','method','pinfu','chi','fu','han','yakuman']) $(id).oninput = calculate;
 render();
 
 if ($('analysis')) {
-  import('./yaku.mjs?v=1.0.6').then(({analyze, availableConditions, conditions, parseHand}) => {
+  import('./yaku.mjs?v=1.0.7').then(({analyze, availableConditions, conditions, parseHand}) => {
     const winds = honors.slice(0,4).map((label,i) => [27+i,label]);
     options('analysisRound',winds);
     options('analysisSeat',winds.slice(1));
@@ -287,9 +289,15 @@ if ($('analysis')) {
       });
       result.replaceChildren(...cards);
     };
-    for (const id of ['analysis','useFullHand','fullHand','analysisRound','analysisSeat','reach','yakuEvent','ippatsu',
-      'dora','ura','aka','localYaku','round','seat','method','pinfu','chi','fu']) {
-      $(id).addEventListener(id==='analysis' ? 'toggle' : 'input',renderYaku);
+    $('analysis').addEventListener('toggle',renderYaku);
+    for (const id of ['fullHand','dora','ura','aka']) $(id).addEventListener('input',renderYaku);
+    for (const id of ['useFullHand','analysisRound','analysisSeat','reach','yakuEvent','ippatsu',
+      'localYaku','pinfu','chi','fu']) $(id).addEventListener('change',renderYaku);
+    for (const id of ['round','method']) {
+      $(id).addEventListener('change',() => {
+        calculate();
+        renderYaku();
+      });
     }
     resetYaku = () => {
       for (const id of ['useFullHand','ippatsu','localYaku']) $(id).checked = false;
@@ -317,7 +325,7 @@ if ($('appTabs')) {
     if (focus) tabs[index].focus();
     if (index === 1 && !guideRequested) {
       guideRequested = true;
-      import('./yaku-guide.mjs?v=1.0.6').catch(() => {
+      import('./yaku-guide.mjs?v=1.0.7').catch(() => {
         guideRequested = false;
         $('guide').textContent = '図鑑を読み込めません。再度タブを開いてください。';
       });
