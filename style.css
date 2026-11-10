@@ -68,3 +68,9 @@ header>div{min-width:0}header>button{flex-shrink:0}
 button,select{touch-action:manipulation}input[type=checkbox]{accent-color:var(--gold)}
 section{box-shadow:0 4px 18px #0002}#result{border-color:var(--gold);background:linear-gradient(145deg,#28251f,#17171b)}
 button:not(:disabled):active{filter:brightness(1.18)}
+
+/* Selectable winning-hand interpretations */
+#yakuResults .analysis-choice{cursor:pointer;touch-action:manipulation;min-height:52px;border:1px solid #777780;outline-offset:2px}
+#yakuResults .analysis-choice.selected{border:2px solid var(--gold);background:#393122}
+#yakuResults .analysis-choice:focus-visible{outline:2px solid var(--gold)}
+#yakuResults .analysis-choice.selected::before{content:'✓ 選択中';display:block;color:var(--gold);font-weight:700;margin-bottom:6px}
