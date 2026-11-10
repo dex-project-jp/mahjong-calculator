@@ -3,6 +3,8 @@ const $ = id => document.getElementById(id);
 const groups = Array(5).fill(null);
 let renderYaku = () => {};
 let resetYaku = () => {};
+let selectedAnalysis = null;
+let selectedAnalysisKey = null;
 const suits = ['萬子','筒子','索子','字牌'];
 const honors = ['東','南','西','北','白','發','中'];
 const numerals = '一二三四五六七八九';
@@ -66,11 +68,11 @@ function calculate() {
   const info = mode === 0 ? calculateFu({groups,win,ron:ron(),round:number('round'),
     seat:number('seat'),doubleWind:rules.doubleWind,pinfu:$('pinfu').checked}) : null;
   $('pinfuRow').hidden = !info?.eligible;
-  const fu = mode === 0 ? info?.fu : number(mode === 1 ? 'chi' : 'fu');
-  const han = number('han');
-  const yakuman = number('yakuman');
+  const fu = selectedAnalysis ? selectedAnalysis.fu : mode === 0 ? info?.fu : number(mode === 1 ? 'chi' : 'fu');
+  const han = selectedAnalysis ? selectedAnalysis.han : number('han');
+  const yakuman = selectedAnalysis ? selectedAnalysis.multiple : number('yakuman');
 
-  const score = mode === 0 && !info ? null : calculateScore({fu,han,yakuman,dealer:dealer(),ron:ron(),
+  const score = mode === 0 && !info && !selectedAnalysis ? null : calculateScore({fu,han,yakuman,dealer:dealer(),ron:ron(),
     honba,sticks,kiriage:rules.kiriage,counted:rules.counted});
   if (!score) {
     $('result').textContent = mode === 0 && !info ? '雀頭・面子とアガリ牌を選択' : (fu ? fu + '符 · 翻数を入力' : '入力を確認');
@@ -83,7 +85,7 @@ function calculate() {
   $('result').innerHTML = '<small>' + (yakuman ? score.limit : fu + '符 · ' + han + '翻 ' + score.limit) +
     '</small><strong>' + fmt(score.total) + ' 点</strong><div>' + payment + (ron() ? '点' : '') +
     '</div>' + (honba || sticks ? '<p>' + honba + '本場 · 供託 ' + sticks + '本</p>' : '') +
-    (info ? '<p>' + info.wait + ' · 基本20 ＋ 雀頭' + info.pairFu + ' ＋ 面子' + info.meldFu +
+    (info && !selectedAnalysis ? '<p>' + info.wait + ' · 基本20 ＋ 雀頭' + info.pairFu + ' ＋ 面子' + info.meldFu +
       ' ＋ 待ち' + info.waitFu + ' ＋ アガリ' + info.winFu + '符' + (info.raw !== info.fu ? ' → ' + info.fu + '符' : '') + '</p>' : '');
 }
 const picker = $('picker');
@@ -228,6 +230,7 @@ if ($('analysis')) {
         }))};
       const choices = analyze(input);
       if (!choices.length) {
+        selectedAnalysis = null; selectedAnalysisKey = null; calculate();
         if (full && hand.length===14) result.textContent = '入力された14枚は和了形ではありません。';
         return;
       }
@@ -238,11 +241,16 @@ if ($('analysis')) {
         ron:ron(),dealer:dealer(),kiriage:rules.kiriage,counted:rules.counted})?.total ?? 0;
       const unique = new Map();
       for (const item of choices) {
-        const key = JSON.stringify([item.roles,item.fu,item.wait,item.special,item.detected]);
+        const key = JSON.stringify([item.roles,item.fu,item.wait,item.special,item.detected,item.groups.map(g=>[g.kind,g.tiles,g.open]),item.win]);
         if (!unique.has(key)) unique.set(key,item);
       }
       const ordered = [...unique.values()].sort((a,b)=>total(b)-total(a));
-      const best = ordered.find(item=>item.valid);
+      const validChoices = ordered.filter(item=>item.valid);
+      const identity = item => JSON.stringify([item.roles,item.fu,item.wait,item.special,item.groups,item.win]);
+      const best = validChoices.find(item=>identity(item)===selectedAnalysisKey) || validChoices[0];
+      selectedAnalysis = best || null;
+      selectedAnalysisKey = best ? identity(best) : null;
+      calculate();
       const bestHan = best && !best.multiple && best.han<=99 ? best : null;
       if (apply && bestHan) {
         apply.disabled = false;
@@ -251,8 +259,16 @@ if ($('analysis')) {
           calculate();
         };
       }
-      const cards = ordered.map(item=>{
+      const cards = validChoices.map(item=>{
         const box = document.createElement('article');
+        box.classList.add('analysis-choice');
+        box.tabIndex = 0;
+        box.setAttribute('role','button');
+        box.setAttribute('aria-pressed',String(item===best));
+        if(item===best) box.classList.add('selected');
+        const choose = () => { selectedAnalysisKey = identity(item); selectedAnalysis = item; renderYaku(); };
+        box.addEventListener('click',choose);
+        box.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose();}});
         const title = document.createElement('strong');
         title.textContent = item.multiple ? item.multiple+'倍役満' : item.valid ?
           item.han+'翻 · '+item.fu+'符' : '役なし';
@@ -272,7 +288,10 @@ if ($('analysis')) {
         }
         const line = document.createElement('p');
         line.textContent = [item.wait,...item.roles.map(r=>r.name+' '+(r.multiple ? r.multiple+'倍役満' : r.han+'翻'))].filter(Boolean).join(' ／ ');
-        box.append(title,line);
+        const score = calculateScore({fu:item.fu,han:item.han,yakuman:item.multiple,ron:ron(),dealer:dealer(),honba,sticks,kiriage:rules.kiriage,counted:rules.counted});
+        const points = document.createElement('p');
+        points.textContent = score ? score.total.toLocaleString('ja-JP')+'点' : '点数未確定';
+        box.append(title,line,points);
         if (item.groups.length && (full || ordered.length>1)) {
           const shape = document.createElement('p');
           shape.innerHTML = item.groups.map(g=>faces(g.tiles)).join(' ');
@@ -315,6 +334,7 @@ if ($('analysis')) {
       });
     }
     resetYaku = () => {
+      selectedAnalysis = null; selectedAnalysisKey = null;
       for (const id of ['useFullHand','ippatsu','localYaku']) $(id).checked = false;
       for (const id of ['fullHand','dora','ura','aka','yakuEvent']) $(id).value = '';
       $('reach').value = '0';
