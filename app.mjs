@@ -238,7 +238,7 @@ if ($('analysis')) {
       $('localYakuRow').hidden = !detected;
       if (!detected) $('localYaku').checked = false;
       const total = item => calculateScore({fu:item.fu,han:item.han,yakuman:item.multiple,
-        ron:ron(),dealer:dealer(),kiriage:rules.kiriage,counted:rules.counted})?.total ?? 0;
+        ron:ron(),dealer:dealer(),honba,sticks,kiriage:rules.kiriage,counted:rules.counted})?.total ?? 0;
       const unique = new Map();
       for (const item of choices) {
         const key = JSON.stringify([item.roles,item.fu,item.wait,item.special,item.detected,item.groups.map(g=>[g.kind,g.tiles,g.open]),item.win]);
