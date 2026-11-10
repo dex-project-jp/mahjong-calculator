@@ -1,4 +1,4 @@
-const CACHE = 'mahjong-calculator-mahjong-lab-2';
+const CACHE = 'mahjong-calculator-mahjong-lab-3';
 const TILE_ASSETS = ['Pin','Sou'].flatMap(suit =>
   Array.from({length:9},(_,i) => './tiles/' + suit + (i+1) + '.svg'));
 const ASSETS = ['./','./index.html','./style.css?v=mahjong-lab-1','./app.mjs?v=1.0.10','./score.mjs','./yaku.mjs','./yaku.mjs?v=1.0.10','./yaku-guide.html','./yaku-guide.mjs','./yaku-guide.mjs?v=1.0.10','./manifest.webmanifest','./icon-192.png?v=mahjong-lab-1','./icon-512.png?v=mahjong-lab-1','./apple-touch-icon.png?v=mahjong-lab-1','./favicon-32.png?v=mahjong-lab-1','./favicon.ico?v=mahjong-lab-1',...TILE_ASSETS];
